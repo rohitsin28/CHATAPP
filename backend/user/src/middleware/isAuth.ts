@@ -8,7 +8,7 @@ export interface AuthenticatedRequest extends Request {
 
 export const isAuth = async(req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-        const authHeader = req.headers["authorization"];
+        const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer "))
             return res.status(401).json({ message: "Unauthorized" });
 
@@ -18,8 +18,7 @@ export const isAuth = async(req: AuthenticatedRequest, res: Response, next: Next
 
         const decoded = await verifyToken(token);
         if (!decoded)
-            return res.status(401).json({ message: "Unauthorized" });
-
+            return res.status(401).json({ message: "Failed to verify token" });
         req.user  = {
             userId: decoded.id,
             email: decoded.email
