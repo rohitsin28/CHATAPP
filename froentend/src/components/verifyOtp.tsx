@@ -5,11 +5,12 @@ import { redirect, useRouter, useSearchParams } from 'next/navigation';
 import { useAppData, user_service } from '@/context/AppContext';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
+import axios from 'axios';
+import Cookies from "js-cookie";
 
 const VerifyOtp = () => {
-    const { isAuth,setUser, setIsAuth, loading: userloading } = useAppData();
+    const { isAuth, setUser, setIsAuth, loading: userloading, fetchChats, fetchUsers } = useAppData();
 
-    const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get('email') || '';
 
@@ -70,47 +71,39 @@ const VerifyOtp = () => {
         }
 
         setLoading(true);
-
-        // Show loader after slight delay
+        setError('');
         setTimeout(() => {
             setShowLoader(true);
         }, 300);
 
         try {
-            // Simulate API call - replace with your actual API
-            const response = await fetch(`${user_service}/user/verifyUser`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: email, otp: otpString })
+            const { data } = await axios.post(`${user_service}/user/verifyUser`, {
+                email: email, otp: otpString
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Set cookie (in real app, use proper cookie library)
-                document.cookie = `token=${data.token}; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
-
-                toast.error(data.message || 'OTP Verified Successfully!');
-            } else {
-                setError(data.message || 'Invalid OTP. Please try again.');
-            }
+            toast.success(data.message);
+            Cookies.set("token", data.token, {
+                expires: 15,
+                secure: false,
+                path: "/",
+            });
+            setOtp(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
+            setUser(data.user);
+            setIsAuth(true);
+            fetchChats();
+            fetchUsers();
         } catch (error: any) {
             console.error('Verification error:', error);
-            setError('Network error. Please try again.');
+            setError(error.response.data.message);
         } finally {
             setLoading(false);
-            setShowLoader(false);
         }
     };
 
     const handleResend = async () => {
         setResendLoading(true);
-        setError(''); // Clear any existing errors
-
+        setError('');
         try {
-            // Simulate resend API call - replace with your actual API
             const response = await fetch(`${user_service}/user/login`, {
                 method: 'POST',
                 headers: {
@@ -126,8 +119,6 @@ const VerifyOtp = () => {
                 setTimer(60); // Reset timer
                 setOtp(['', '', '', '', '', '']); // Clear OTP inputs
                 inputRefs.current[0]?.focus(); // Focus first input
-                setUser(data.user);
-                setIsAuth(true);
             } else {
                 toast.error(data.message || 'Failed to resend OTP. Please try again.');
             }
@@ -145,8 +136,8 @@ const VerifyOtp = () => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    if(userloading) return <Loading/>
-    if(isAuth) redirect('/chat');
+    if (userloading) return <Loading />
+    if (isAuth) redirect('/chat');
     return (
         <div className="min-h-screen bg-blue-500 flex justify-center items-center">
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
@@ -173,7 +164,7 @@ const VerifyOtp = () => {
                                     onChange={(e) => handleInputChange(index, e.target.value)}
                                     onKeyDown={(e) => handleKeyDown(index, e)}
                                     onPaste={index === 0 ? handlePaste : undefined}
-                                    ref={(el: HTMLInputElement | null) => (inputRefs.current[index] = el)}
+                                    ref={(el: HTMLInputElement | null) => { inputRefs.current[index] = el }}
                                     className={`w-12 h-12 text-center border ${error ? 'border-red-500' : data ? 'border-blue-500' : 'border-gray-300'
                                         } rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold transition-colors`}
                                     disabled={loading}
@@ -187,8 +178,8 @@ const VerifyOtp = () => {
                         onClick={handleSubmit}
                         disabled={loading || otp.join('').length !== 6}
                         className={`w-full text-center rounded-lg px-4 py-3 text-white font-semibold transition-colors duration-200 ${loading || otp.join('').length !== 6
-                                ? 'bg-gray-400 cursor-not-allowed flex justify-center items-center gap-2'
-                                : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+                            ? 'bg-gray-400 cursor-not-allowed flex justify-center items-center gap-2'
+                            : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
                             }`}
                     >
                         Verify OTP
