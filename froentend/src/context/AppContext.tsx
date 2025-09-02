@@ -44,6 +44,7 @@ export interface AppContextType {
     fetchUsers: () => Promise<void>;
     chats: ICharts[] | null;
     users: IUser[] | null;
+    setChats: React.Dispatch<React.SetStateAction<ICharts[] | null>>;
 }
 
 // -------- Context Setup -------- //
@@ -100,7 +101,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setChats(data.chats);
+            setChats(data.chatWithUserData);
         } catch (error) {
             console.log(error);
         }
@@ -115,7 +116,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setUsers(data);
+            setUsers(data.user);
         } catch (error) {
             console.log(error);
         }
@@ -141,6 +142,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 fetchUsers,
                 chats,
                 users,
+                setChats
             }}
         >
             {children}
