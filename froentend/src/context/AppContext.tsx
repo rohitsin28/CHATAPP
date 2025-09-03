@@ -74,7 +74,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setUser(data);
+            setUser(data.user);
             setIsAuth(true);
         } catch (error) {
             console.log(error);

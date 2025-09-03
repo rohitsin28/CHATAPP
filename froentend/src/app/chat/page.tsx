@@ -8,11 +8,13 @@ import toast from 'react-hot-toast';
 import Cookies from 'js-cookie'
 import axios from 'axios';
 import ChatHeader from '@/components/ChatHeader';
+import ChatMessages from '@/components/ChatMessages';
+import MessageInput from '@/components/MessageInput';
 
 export interface Message {
   _id: string;
   chatId: string;
-  sender: string;
+  senderId: string;
   text?: string;
   image?: {
     url: string;
@@ -49,8 +51,8 @@ const ChatApp = () => {
   async function fetchChat() {
     const token = Cookies.get('token');
     try {
-      const {data} = await axios.get(`${chat_service}/chat/messages/${selectedUser}`,{
-        headers:{
+      const { data } = await axios.get(`${chat_service}/chat/messages/${selectedUser}`, {
+        headers: {
           Authorization: `Bearer ${token}`
         }
       });
@@ -63,11 +65,11 @@ const ChatApp = () => {
     }
   }
 
-  async function createChat(u: IUser){
+  async function createChat(u: IUser) {
     try {
       const token = Cookies.get('token');
-      const {data } = await axios.post(`${chat_service}/chat/createNewChat`,{userId: loggedInUser?._id, otherUserId: u._id},{
-        headers:{
+      const { data } = await axios.post(`${chat_service}/chat/createNewChat`, { userId: loggedInUser?._id, otherUserId: u._id }, {
+        headers: {
           Authorization: `Bearer ${token}`
         }
       });
@@ -78,12 +80,62 @@ const ChatApp = () => {
       toast.error("Failed to start chat");
     }
   }
+  const handleMessageSend = async(e:any, imageFile?:  File | null) => {
+    e.preventDefault()
+    if(!message.trim() && !imageFile) return;
+    if(!selectedUser) return;
 
-  useEffect(()=>{
-    if(selectedUser){
+    // SocketWork
+    const token = Cookies.get('token');
+    try {
+      const formData = new FormData();
+      formData.append('chatId', selectedUser);
+      if(message.trim()){
+        formData.append('text',message)
+      }
+
+      if(imageFile){
+        formData.append('image',imageFile)
+      }
+      const { data } = await axios.post(`${chat_service}/chat/message`,formData,{
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      setMessages((prev)=> {
+        const currentMessages = prev || [];
+        const messagesExist = currentMessages.some(
+          (msg) => msg._id === data.message._id
+        );
+
+        if(!messagesExist) {
+          return [...currentMessages, data.message]
+        };
+
+        return currentMessages;
+      })
+      setMessage("");
+      const displayText = imageFile ? "📸 image" : message
+    } catch (error: any) {
+      toast.error(error.response.data.message);
+    }
+  }
+
+  const handleTyping = (value:string) =>  {
+    setMessage(value);
+    if(!selectedUser) return
+    
+    // Socket Setup
+
+  }
+
+  useEffect(() => {
+    if (selectedUser) {
       fetchChat();
     }
-  },[selectedUser]);
+  }, [selectedUser]);
 
   if (loading) return <Loading />
   return (
@@ -91,19 +143,36 @@ const ChatApp = () => {
       <ChatSidebar
         sidebarOpen={siderbarOpen}
         setSidebarOpen={setSiderbarOpen}
-        showAllUsers={showAllUser} 
-        setShowAllUsers={setShowAllUser} 
-        users={users} 
-        loggedInUser={loggedInUser} 
-        chats={chats} 
-        selectedUser={selectedUser} 
-        setSelectedUser={setSelectedUser} 
+        showAllUsers={showAllUser}
+        setShowAllUsers={setShowAllUser}
+        users={users}
+        loggedInUser={loggedInUser}
+        chats={chats}
+        selectedUser={selectedUser}
+        setSelectedUser={setSelectedUser}
         handleLogout={handleLogout}
-        createChat = {createChat} />
+        createChat={createChat} />
 
-        <div className="flex-1 flex flex-col justify-between p-4 backdrop-blur-xl bg-white/5 border-1 border-white/10">
-          <ChatHeader user={user} setSidebarOpen={setSiderbarOpen} isTyping={isTyping}/>
-        </div>
+      <div className="flex-1 flex flex-col justify-between p-4 backdrop-blur-xl bg-white/5 border-1 border-white/10">
+        <ChatHeader
+          user={user} 
+          setSidebarOpen={setSiderbarOpen} 
+          isTyping={isTyping} 
+        />
+
+        <ChatMessages
+         selectedUser={selectedUser}
+         messages={messages}
+         loggedInUser={loggedInUser}
+        />
+
+        <MessageInput
+          selectedUser = {selectedUser}
+          message = {message}
+          setMessage={handleTyping}
+          handleMessageSend = {handleMessageSend}
+         />
+      </div>
     </div>
   )
 }
