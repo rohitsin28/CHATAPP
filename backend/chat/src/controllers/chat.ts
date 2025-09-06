@@ -3,6 +3,7 @@ import type { AuthenticatedRequest } from "../millerwares/isAuth.js";
 import { Chat } from "../models/chatModel.js";
 import { Message } from "../models/messages.js";
 import axios from "axios";
+import { getRecieverSocketId, io } from "../config/socket.js";
 
 export const createNewChat = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -52,7 +53,7 @@ export const getAllChats = async (req: AuthenticatedRequest, res: Response) => {
               },
             }
           );
-          console.log("Fetched user data for chat:", data);
+
           return {
             user: data,
             chat: {
@@ -111,12 +112,20 @@ export const sendMessage = async (req: AuthenticatedRequest, res: Response) => {
     if (!otherUserId) return res.status(401).json({ message: 'Invalid chat participants!' });
 
     // Socket Setup
+    const receiverSocketId = getRecieverSocketId(otherUserId.toString());
+    let isReceiverInChatRoom = false;
+    if(receiverSocketId){
+      const receiverSocket = io.sockets.sockets.get(receiverSocketId);
+      if(receiverSocket && receiverSocket.rooms.has(chatId)){
+        isReceiverInChatRoom = true;
+      }
+    }
 
     let messageData: any = {
       chatId,
       senderId,
-      seen: false,
-      seenAt: undefined
+      seen: isReceiverInChatRoom,
+      seenAt: isReceiverInChatRoom ? new Date() : undefined
     };
 
     if (imageFile) {
@@ -140,6 +149,19 @@ export const sendMessage = async (req: AuthenticatedRequest, res: Response) => {
     }, { new: true });
 
     // emit to socket
+    io.to(chatId).emit('newMessage', savedMessage);
+    if(receiverSocketId){
+      io.to(receiverSocketId).emit('newMessage', savedMessage);
+    }
+
+    const senderSocketId = getRecieverSocketId(senderId.toString());
+    if(senderSocketId) {
+      io.to(senderSocketId).emit('newMessage',savedMessage);
+    }
+
+    if(isReceiverInChatRoom && senderSocketId){
+      io.to(senderSocketId).emit('messagesSeen',{chatId,seenBy:otherUserId,messageIds: [savedMessage._id]});
+    }
 
     return res.status(201).json({ message: 'Message sent successfully', data: savedMessage });
   } catch (error) {
@@ -176,6 +198,14 @@ export const getMessagesByChat = async (req: AuthenticatedRequest, res: Response
         return res.status(400).json({ message: 'No Other user!' });
       
       // Socket Work
+      if(messagesToMarkSeen.length > 0){
+        const otherSocketId = getRecieverSocketId(otherUserId.toString());
+        if(otherSocketId){
+          io.to(otherSocketId).emit('messagesSeen',{
+            chatId,seenBy: userId, messageIds: messagesToMarkSeen.map((msg)=>msg._id)
+          })
+        }
+      }
 
       return res.json({ message: 'Messages fetched successfully', messages, user: data, markedAsSeen: messagesToMarkSeen.length });
     } catch (error) {
