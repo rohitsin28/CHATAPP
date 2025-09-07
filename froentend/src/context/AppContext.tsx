@@ -7,6 +7,7 @@ import axios from "axios";
 
 export const user_service = `http://192.168.1.39:5000/api/v1`;
 export const chat_service = `http://192.168.1.39:5002/api/v1`;
+export const chat_service_socket = `http://192.168.1.39:5002`;
 
 // -------- Types -------- //
 export interface IUser {
