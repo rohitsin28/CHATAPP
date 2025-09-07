@@ -6,7 +6,7 @@ const route = express.Router();
 
 route.post("/login", loginUser);
 route.post("/verifyUser", verifyuser);
-route.patch("/getuser", isAuth, updateUser);
+route.patch("/update", isAuth, updateUser);
 route.get("/profile", isAuth, myProfile)
 route.get("/getuser", isAuth, getUsers);
 route.get("/getuser/:id",isAuth, getUsers);
