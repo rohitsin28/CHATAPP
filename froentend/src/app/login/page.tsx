@@ -55,7 +55,13 @@ const Login = () => {
             toast.success(data.message);
             router.push(`/verify?email=${formData.email}`);
         } catch (error: any) {
-            toast.error(error || "Something went wrong!");
+            if (error.response) {
+                toast.error(error.response.data.message || "Something went wrong!");
+            } else if (error.request) {
+                toast.error("Server not responding. Please try again later.");
+            } else {
+                toast.error(error.message || "Something went wrong!");
+            }
         } finally {
             setLoading(false);
         }
