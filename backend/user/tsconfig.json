@@ -1,28 +1,23 @@
 {
   "compilerOptions": {
-    // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
-
-    // Environment Settings
     "module": "NodeNext",
     "target": "ES2020",
     "moduleResolution": "NodeNext",
-    "types": ["node"],
-
-    // Outputs
+    "types": ["node"],            // Include Node.js types
+    "lib": ["ES2020"],            // Don’t include DOM libs
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-
-    // Type Safety
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
-    // Other
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
