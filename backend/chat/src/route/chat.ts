@@ -1,7 +1,7 @@
 import express from 'express';
-import { isAuth } from '../millerwares/isAuth.js';
+import { isAuth } from '../middlewares/isAuth.js';
 import { createNewChat, getAllChats, getMessagesByChat, sendMessage } from '../controllers/chat.js';
-import { upload } from '../millerwares/multer.js';
+import { upload } from '../middlewares/multer.js';
 
 const route = express.Router();
 

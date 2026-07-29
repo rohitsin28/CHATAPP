@@ -4,7 +4,7 @@ export interface IChat extends mongoose.Document {
     users: [string];
     lastMessage: {
         text: string;
-        sender: string;
+        senderId: string;
     };
     createdAt: Date;
     updatedAt: Date;
@@ -14,7 +14,7 @@ const schema = new mongoose.Schema({
     users: [{ type: String, required: true }],
     lastMessage: {
         text: { type: String },
-        sender: { type: String }
+        senderId: { type: String }
     }
 }, { timestamps: true, versionKey: false });
 
